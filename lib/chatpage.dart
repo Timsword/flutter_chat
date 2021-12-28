@@ -5,15 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ChatPage extends StatefulWidget {
   final docs;
 
-  const ChatPage({Key key, this.docs}) : super(key: key);
+  const ChatPage({Key? key, this.docs}) : super(key: key);
 
   @override
   _ChatPageState createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  String groupChatId;
-  String userID;
+  String? groupChatId;
+  String? userID;
 
   TextEditingController textEditingController = TextEditingController();
 
@@ -31,7 +31,7 @@ class _ChatPageState extends State<ChatPage> {
 
     String anotherUserId = widget.docs['id'];
 
-    if (userID.compareTo(anotherUserId) > 0) {
+    if (userID!.compareTo(anotherUserId) > 0) {
       groupChatId = '$userID - $anotherUserId';
     } else {
       groupChatId = '$anotherUserId - $userID';
@@ -46,10 +46,10 @@ class _ChatPageState extends State<ChatPage> {
         title: Text('Chat page!'),
       ),
       body: StreamBuilder(
-        stream: Firestore.instance
+        stream: FirebaseFirestore.instance
             .collection('messages')
-            .document(groupChatId)
-            .collection(groupChatId)
+            .doc(groupChatId)
+            .collection(groupChatId!)
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -60,8 +60,8 @@ class _ChatPageState extends State<ChatPage> {
                     child: ListView.builder(
                   controller: scrollController,
                   itemBuilder: (listContext, index) =>
-                      buildItem(snapshot.data.documents[index]),
-                  itemCount: snapshot.data.documents.length,
+                      buildItem((snapshot.data! as QuerySnapshot).docs[index]),
+                  itemCount: (snapshot.data! as QuerySnapshot).docs.length,
                   reverse: true,
                 )),
                 Row(
@@ -98,16 +98,15 @@ class _ChatPageState extends State<ChatPage> {
     String msg = textEditingController.text.trim();
 
     /// Upload images to firebase and returns a URL
-
     if (msg.isNotEmpty) {
       print('thisiscalled $msg');
-      var ref = Firestore.instance
+      var ref = FirebaseFirestore.instance
           .collection('messages')
-          .document(groupChatId)
-          .collection(groupChatId)
-          .document(DateTime.now().millisecondsSinceEpoch.toString());
+          .doc(groupChatId)
+          .collection(groupChatId!)
+          .doc(DateTime.now().millisecondsSinceEpoch.toString());
 
-      Firestore.instance.runTransaction((transaction) async {
+      FirebaseFirestore.instance.runTransaction((transaction) async {
         await transaction.set(ref, {
           "senderId": userID,
           "anotherUserId": widget.docs['id'],
